@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TreeNode } from '../components/TreeNode';
 import { SelectedTree } from '../components/SelectedTree';
+import { SearchBar } from '../components/SearchBar';
 import { initialData } from '../data/initialData';
 import { usePreferences } from '../hooks/usePreferences';
 import { buildSelectedTree } from '../utils/treeUtils';
+import { searchNodes } from '../utils/searchUtils';
 import { 
   Cog6ToothIcon,
   ArrowDownTrayIcon,
@@ -20,6 +22,9 @@ export const Preferences = () => {
     savePreferences,
     updateLocalServices
   } = usePreferences();
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSearchTerm, setSelectedSearchTerm] = useState('');
 
   const handleSelect = (id, isSelected) => {
     const newSelected = new Set(selectedServices);
@@ -53,7 +58,9 @@ export const Preferences = () => {
     updateLocalServices(newSelected);
   };
 
+  const filteredData = searchNodes(initialData, searchTerm);
   const selectedTree = buildSelectedTree(initialData, selectedServices);
+  const filteredSelectedTree = searchNodes(selectedTree, selectedSearchTerm);
 
   if (isLoading) {
     return (
@@ -110,37 +117,58 @@ export const Preferences = () => {
 
           <div className="flex flex-col md:flex-row">
             <div className="md:w-2/3 p-6 border-r border-gray-200 dark:border-gray-700">
-              <div className="space-y-2">
-                {initialData.map((node) => (
-                  <TreeNode
-                    key={node.id}
-                    node={node}
-                    selected={selectedServices}
-                    onSelect={handleSelect}
-                  />
-                ))}
+              <div className="space-y-4">
+                <SearchBar
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  placeholder="Search available services..."
+                />
+                <div className="space-y-2">
+                  {filteredData.map((node) => (
+                    <TreeNode
+                      key={node.id}
+                      node={node}
+                      selected={selectedServices}
+                      onSelect={handleSelect}
+                    />
+                  ))}
+                </div>
+                {filteredData.length === 0 && (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                    No services found matching your search.
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="md:w-1/3 p-6 bg-gray-50 dark:bg-gray-900">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Selected Services
-              </h2>
-              {selectedTree.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedTree.map((node) => (
-                    <SelectedTree
-                      key={node.id}
-                      node={node}
-                      onRemove={handleSelect}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No services selected. Choose from the categories on the left.
-                </p>
-              )}
+              <div className="space-y-4">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Selected Services
+                </h2>
+                <SearchBar
+                  value={selectedSearchTerm}
+                  onChange={setSelectedSearchTerm}
+                  placeholder="Search selected services..."
+                />
+                {filteredSelectedTree.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredSelectedTree.map((node) => (
+                      <SelectedTree
+                        key={node.id}
+                        node={node}
+                        onRemove={handleSelect}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {selectedServices.size > 0
+                      ? 'No selected services match your search.'
+                      : 'No services selected. Choose from the categories on the left.'}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
